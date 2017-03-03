@@ -21,7 +21,7 @@ import lnet
 
 class Painter:
 
-    def __init__(self, gpu=0):
+    def __init__(self, gpu=-1):
 
         print("start")
         self.root = "./images/"
@@ -44,21 +44,23 @@ class Painter:
         #lnn = lnet.LNET()
         #serializers.load_npz("./cgi-bin/wnet/models/model_cnn_128_df_4", cnn_128)
         #serializers.load_npz("./cgi-bin/paint_x2_unet/models/model_cnn_128_f3_2", cnn_128)
-        serializers.load_npz(
-            "./cgi-bin/paint_x2_unet/models/unet_128_standard", self.cnn_128)
+        #serializers.load_npz("./cgi-bin/paint_x2_unet/models/unet_128_standard", self.cnn_128)
+        serializers.load_npz("./result/model_final", self.cnn_128)
         #serializers.load_npz("./cgi-bin/paint_x2_unet/models/model_cnn_128_ua_1", self.cnn_128)
         #serializers.load_npz("./cgi-bin/paint_x2_unet/models/model_m_1.6", self.cnn)
-        serializers.load_npz(
-            "./cgi-bin/paint_x2_unet/models/unet_512_standard", self.cnn_512)
+        #serializers.load_npz("./cgi-bin/paint_x2_unet/models/unet_512_standard", self.cnn_512)
+        serializers.load_npz("./result_x2/model_final", self.cnn_512)
         #serializers.load_npz("./cgi-bin/paint_x2_unet/models/model_p2_1", self.cnn)
         #serializers.load_npz("./cgi-bin/paint_x2_unet/models/model_10000", self.cnn)
         #serializers.load_npz("./cgi-bin/paint_x2_unet/models/liner_f", lnn)
 
     def save_as_img(self, array, name):
+        print("save %s" % name)
+
         array = array.transpose(1, 2, 0)
         array = array.clip(0, 255).astype(np.uint8)
         array = cuda.to_cpu(array)
-        (major, minor, _) = cv2.__version__.split(".")
+        (major, minor, _, _) = cv2.__version__.split(".")
         if major == '3':
             img = cv2.cvtColor(array, cv2.COLOR_YUV2RGB)
         else:
@@ -81,7 +83,7 @@ class Painter:
         lnn = lnet.LNET()
         y = lnn.calc(Variable(x, volatile='on'), test=True)
 
-        self.save_as_img(y.data[0], self.root + "line/" + id_str + ".jpg")
+        self.save_as_img(y.data[0], self.root + "dst/" + id_str + ".jpg")
 
     def colorize(self, id_str, step='C', blur=0, s_size=128,colorize_format="jpg"):
         if self.gpu >= 0:
@@ -89,7 +91,7 @@ class Painter:
 
         _ = {'S': "ref/", 'L': "out_min/", 'C': "ref/"}
         dataset = ImageAndRefDataset(
-            [id_str + ".png"], self.root + "line/", self.root + _[step])
+            [id_str + ".png"], self.root + "linex2/", self.root + _[step])
 
         _ = {'S': True, 'L': False, 'C': True}
         sample = dataset.get_example(0, minimize=_[step], blur=blur, s_size=s_size)
@@ -140,4 +142,5 @@ if __name__ == '__main__':
     for n in range(1):
         p = Painter()
         print(n)
-        p.colorize(n * p.batchsize)
+        #p.colorize(n * p.batchsize)
+        p.colorize("01")

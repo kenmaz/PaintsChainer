@@ -28,9 +28,9 @@ os.environ["CHAINER_TYPE_CHECK"] = "0"
 def main():
     parser = argparse.ArgumentParser(
         description='chainer line drawing colorization')
-    parser.add_argument('--batchsize', '-b', type=int, default=16,
+    parser.add_argument('--batchsize', '-b', type=int, default=2,
                         help='Number of images in each mini-batch')
-    parser.add_argument('--epoch', '-e', type=int, default=20,
+    parser.add_argument('--epoch', '-e', type=int, default=6,
                         help='Number of sweeps over the dataset to train')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
@@ -44,7 +44,7 @@ def main():
                         help='Random seed')
     parser.add_argument('--snapshot_interval', type=int, default=10000,
                         help='Interval of snapshot')
-    parser.add_argument('--display_interval', type=int, default=100,
+    parser.add_argument('--display_interval', type=int, default=3,
                         help='Interval of displaying log to console')
     args = parser.parse_args()
 
@@ -63,7 +63,7 @@ def main():
     #serializers.load_npz("result/model_dis_iter_20000", dis)
 
     l = lnet.LNET()
-    serializers.load_npz("models/liner_f", l)
+    #serializers.load_npz("models/liner_f", l)
 
     dataset = Image2ImageDataset(
         "dat/images_color_train.dat", root + "line/", root + "color/", train=True)
@@ -121,6 +121,7 @@ def main():
         chainer.serializers.load_npz(args.resume, trainer)
 
     # Save the trained model
+    out_dir = args.out
     chainer.serializers.save_npz(os.path.join(out_dir, 'model_final'), cnn)
     chainer.serializers.save_npz(os.path.join(out_dir, 'optimizer_final'), opt)
 

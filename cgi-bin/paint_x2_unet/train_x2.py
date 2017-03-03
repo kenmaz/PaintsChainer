@@ -29,15 +29,15 @@ from img2imgDataset import Image2ImageDatasetX2
 def main():
     parser = argparse.ArgumentParser(
         description='chainer line drawing colorization')
-    parser.add_argument('--batchsize', '-b', type=int, default=4,
+    parser.add_argument('--batchsize', '-b', type=int, default=2,
                         help='Number of images in each mini-batch')
-    parser.add_argument('--epoch', '-e', type=int, default=20,
+    parser.add_argument('--epoch', '-e', type=int, default=3,
                         help='Number of sweeps over the dataset to train')
     parser.add_argument('--gpu', '-g', type=int, default=-1,
                         help='GPU ID (negative value indicates CPU)')
     parser.add_argument('--dataset', '-i', default='./images/',
                         help='Directory of image files.')
-    parser.add_argument('--out', '-o', default='result',
+    parser.add_argument('--out', '-o', default='result_x2',
                         help='Directory to output the result')
     parser.add_argument('--resume', '-r', default='',
                         help='Resume the training from snapshot')
@@ -60,8 +60,8 @@ def main():
     cnn = unet.UNET()
     #serializers.load_npz("result/model_iter_10000", cnn)
     cnn_128 = unet.UNET()
-    serializers.load_npz("models/model_cnn_128_dfl2_9", cnn_128)
-
+    #serializers.load_npz("models/model_cnn_128_dfl2_9", cnn_128)
+    print(root)
     dataset = Image2ImageDatasetX2(
         "dat/images_color_train.dat", root + "linex2/", root + "colorx2/", train=True)
     # dataset.set_img_dict(img_dict)
@@ -106,6 +106,7 @@ def main():
         chainer.serializers.load_npz(args.resume, trainer)
 
     # Save the trained model
+    out_dir = args.out
     chainer.serializers.save_npz(os.path.join(out_dir, 'model_final'), cnn)
     chainer.serializers.save_npz(os.path.join(out_dir, 'optimizer_final'), opt)
 
@@ -125,6 +126,7 @@ class ganUpdater(chainer.training.StandardUpdater):
         return loss
 
     def update_core(self):
+        print(1)
         xp = self.cnn.xp
         self._iter += 1
 
@@ -140,9 +142,11 @@ class ganUpdater(chainer.training.StandardUpdater):
         t_out = xp.zeros((batchsize, 3, w_out, w_out)).astype("f")
 
         for i in range(batchsize):
+            print(2)
             x_in[i, :] = xp.asarray(batch[i][0])
             x_in_2[i, 0, :] = xp.asarray(batch[i][2])
             for ch in range(3):
+                print(3)
                 color_ch = cv2.resize(
                     batch[i][1][ch], (w_out, w_out), interpolation=cv2.INTER_CUBIC).astype("f")
                 x_in_2[i, ch + 1, :] = xp.asarray(color_ch)
@@ -152,10 +156,13 @@ class ganUpdater(chainer.training.StandardUpdater):
         t_out = Variable(t_out)
 
         x_out = self.cnn_128.calc(x_in, test=False)
-        x_out = x_out.data.get()
+        #x_out = x_out.data.get()
+        x_out = x_out.data
 
         for j in range(batchsize):
+            print(4)
             for ch in range(3):
+                print(5)
                 # randomly use src color ch
                 if np.random.rand() < 0.8:
                     x_in_2[j, 1 + ch, :] = xp.asarray(cv2.resize(

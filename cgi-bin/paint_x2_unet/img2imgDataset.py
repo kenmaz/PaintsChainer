@@ -14,7 +14,8 @@ from chainer import cuda, optimizers, serializers, Variable
 import cv2
 
 def cvt2YUV(img):
-    (major, minor, _) = cv2.__version__.split(".")
+    print(cv2.__version__)
+    (major, minor, _, _) = cv2.__version__.split(".")
     if major == '3':
         img = cv2.cvtColor( img, cv2.COLOR_RGB2YUV )
     else:
@@ -42,22 +43,30 @@ class ImageAndRefDataset(chainer.dataset.DatasetMixin):
         image1 = cv2.imread(path1, cv2.IMREAD_GRAYSCALE)
         print("load:" + path1, os.path.isfile(path1), image1 is None)
         image1 = np.asarray(image1, self._dtype)
+        print(image1.shape)
+        print(s_size)
 
         _image1 = image1.copy()
         if minimize:
             if image1.shape[0] < image1.shape[1]:
+                print("img10<img11")
                 s0 = s_size
-                s1 = int(image1.shape[1] * (s_size / image1.shape[0]))
+                s1 = int(float(image1.shape[1]) * (float(s_size) / float(image1.shape[0])))
                 s1 = s1 - s1 % 16
                 _s0 = 4 * s0
-                _s1 = int(image1.shape[1] * ( _s0 / image1.shape[0]))
+                _s1 = int(float(image1.shape[1]) * ( float(_s0) / float(image1.shape[0])))
                 _s1 = (_s1+8) - (_s1+8) % 16
             else:
+                print("img10>=img11")
                 s1 = s_size
-                s0 = int(image1.shape[0] * (s_size / image1.shape[1]))
+                print("s0::%d,%d,%d" % (image1.shape[0],s_size,image1.shape[1]))
+                s0 = int(float(image1.shape[0]) * (float(s_size) / float(image1.shape[1])))
+                print("s0=")
+                print(s0)
+                print("s0:%d,s1:%d" % (s0,s1))
                 s0 = s0 - s0 % 16
                 _s1 = 4 * s1
-                _s0 = int(image1.shape[0] * ( _s1 / image1.shape[1]))
+                _s0 = int(float(image1.shape[0]) * ( float(_s1) / float(image1.shape[1])))
                 _s0 = (_s0+8) - (_s0+8) % 16
 
             _image1 = image1.copy()
@@ -69,6 +78,7 @@ class ImageAndRefDataset(chainer.dataset.DatasetMixin):
                 blured = cv2.blur(_image1, ksize=(blur, blur))
                 image1 = _image1 + blured - 255
 
+            print("image1:%s,%d,%d" % (image1,s1,s0))
             image1 = cv2.resize(image1, (s1, s0), interpolation=cv2.INTER_AREA)
 
         # image is grayscale
@@ -83,6 +93,7 @@ class ImageAndRefDataset(chainer.dataset.DatasetMixin):
 
         # add color ref image
         path_ref = os.path.join(self._root2, self._paths[i])
+        print("path_ref %s:" % path_ref)
 
         if minimize:
             image_ref = cv2.imread(path_ref, cv2.IMREAD_UNCHANGED)
@@ -146,23 +157,11 @@ class Image2ImageDataset(chainer.dataset.DatasetMixin):
         if self._train:
             bin_r = 0.9
 
-        readed = False
-        if np.random.rand() < bin_r:
-            if np.random.rand() < 0.3:
-                path1 = os.path.join(self._root1 + "_b2r/", self._paths[i])
-            else:
-                path1 = os.path.join(self._root1 + "_cnn/", self._paths[i])
-            path2 = os.path.join(self._root2 + "_b2r/", self._paths[i])
-            image1 = cv2.imread(path1, cv2.IMREAD_GRAYSCALE)
-            image2 = cv2.imread(path2, cv2.IMREAD_COLOR)
-            if image1 is not None and image2 is not None:
-                if image1.shape[0] > 0 and image1.shape[1] and image2.shape[0] > 0 and image2.shape[1]:
-                    readed = True
-        if not readed:
-            path1 = os.path.join(self._root1, self._paths[i])
-            path2 = os.path.join(self._root2, self._paths[i])
-            image1 = cv2.imread(path1, cv2.IMREAD_GRAYSCALE)
-            image2 = cv2.imread(path2, cv2.IMREAD_COLOR)
+        path1 = os.path.join(self._root1, self._paths[i])
+        path2 = os.path.join(self._root2, self._paths[i])
+        print("path 1:%s 2:%s" % (path1, path2))
+        image1 = cv2.imread(path1, cv2.IMREAD_GRAYSCALE)
+        image2 = cv2.imread(path2, cv2.IMREAD_COLOR)
 
         image2 = cvt2YUV( image2 )
         name1 = os.path.basename(self._paths[i])
